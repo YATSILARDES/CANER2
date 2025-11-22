@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Copy of Doğalgaz Keşif Asistanı 19.11.2025",
+  "description": "Doğalgaz tesisatı keşifleri için veri toplama, hesaplama ve raporlama yapmanızı sağlayan bir web uygulaması. Oda ve cihaz bilgilerini girerek anında toplam tüketim, boru çapı ve havalandırma ihtiyaçlarını hesaplayın.",
+  "requestFramePermissions": []
+}
