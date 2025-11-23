@@ -8,6 +8,7 @@ interface SummaryProps {
     totalPricingCost: number;
     surveyData: SurveyData;
     onFinalBidChange: (value: number) => void;
+    onAgreedPriceChange: (value: number) => void; // New prop
     onSaveTemplate: () => void;
     onDownloadProject?: () => void;
     onLoadProject?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -25,6 +26,7 @@ export const Summary: React.FC<SummaryProps> = ({
     totalPricingCost,
     surveyData,
     onFinalBidChange,
+    onAgreedPriceChange,
     onSaveTemplate,
     onDownloadProject,
     onLoadProject
@@ -164,7 +166,25 @@ export const Summary: React.FC<SummaryProps> = ({
                         </div>
 
                         <p className="text-[10px] text-slate-500 mt-2 italic">
-                            * Teklif formunda görünecek nihai tutardır. Boş bırakılırsa ham maliyet kullanılır.
+                            * Teklif formunda görünecek nihai tutardır.
+                        </p>
+                    </div>
+
+                    {/* Agreed Price Section */}
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                        <label className="block text-sm font-bold text-purple-800 mb-1">Müşteriyle Anlaşılan Fiyat</label>
+                        <div className="relative">
+                            <input 
+                                type="number" 
+                                value={surveyData.agreedPrice || ''} 
+                                onChange={(e) => onAgreedPriceChange(e.target.valueAsNumber)}
+                                placeholder="0"
+                                className="w-full pl-3 pr-12 py-3 bg-white border-2 border-purple-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-600 font-bold text-lg text-purple-900"
+                            />
+                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500 font-bold">TL</span>
+                        </div>
+                        <p className="text-[10px] text-purple-500 mt-1 italic">
+                            * Pazarlık sonucu el sıkışılan son rakamı buraya not edebilirsiniz.
                         </p>
                     </div>
                 </div>

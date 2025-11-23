@@ -16,6 +16,7 @@ interface RoomListProps {
     radiatorModels?: string[];
     onAddRadiatorModel?: (name: string) => void;
     onDeleteRadiatorModel?: (name: string) => void;
+    suggestions?: string[];
 }
 
 export const RoomList: React.FC<RoomListProps> = ({ 
@@ -27,6 +28,7 @@ export const RoomList: React.FC<RoomListProps> = ({
     radiatorModels,
     onAddRadiatorModel,
     onDeleteRadiatorModel,
+    suggestions,
     ...restProps 
 }) => {
     const [isEditMode, setIsEditMode] = useState(false);

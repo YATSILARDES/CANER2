@@ -21,6 +21,7 @@ export interface PricingSubItem {
     name: string;
     units: number;
     rate: number;
+    showInProposal?: boolean; // New field to control visibility in proposal
 }
 
 export interface SelectableOption {
@@ -36,6 +37,7 @@ export interface Appliance {
     consumptionKw: number;
     count: number;
     price: number;
+    subItems?: PricingSubItem[]; // Added subItems for appliances (e.g. Cabinet under Combi)
 }
 
 export interface Radiator {
@@ -87,7 +89,9 @@ export interface SurveyData {
     radiatorMeterPrice: number; 
     radiatorValvePrice: number; 
     extraOffers: ExtraOffer[];
-    finalBidPrice?: number; 
+    finalBidPrice?: number;
+    agreedPrice?: number; // Added agreed price field
+    proposalNote?: string; // Added proposal note field
 }
 
 export interface PipeDiameterRule {

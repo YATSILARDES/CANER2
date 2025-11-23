@@ -39,7 +39,6 @@ const NumericRow: React.FC<RowProps> = ({ item, onChange, onDelete, isEditMode, 
                         value={item.name}
                         onChange={(val) => onChange({ name: val })}
                         onSelect={(val) => {
-                            // Instant Update with Price if available
                             const price = globalPrices[val];
                             if (price !== undefined) {
                                 onChange({ name: val, rate: price });
@@ -102,12 +101,28 @@ const NumericRow: React.FC<RowProps> = ({ item, onChange, onDelete, isEditMode, 
     );
 };
 
-const ToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, isEditMode, suggestions = [], globalPrices = {} }) => {
+const ToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, onAddSubItem, onDeleteSubItem, isEditMode, suggestions = [], globalPrices = {} }) => {
     const isEnabled = item.units > 0;
+    const hasSubItems = item.subItems && item.subItems.length > 0;
+
+    const handleSubItemChange = (subId: string, updates: Partial<PricingSubItem>) => {
+        if (!item.subItems) return;
+        const updatedSubItems = item.subItems.map(sub => 
+            sub.id === subId ? { ...sub, ...updates } : sub
+        );
+        onChange({ subItems: updatedSubItems });
+    };
+
+    const handleAddSubItemClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onAddSubItem) onAddSubItem(item.id, "YENİ MALZEME");
+    }
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-3 rounded-lg border border-slate-200 bg-slate-50/50 transition-colors hover:border-blue-200">
-            <div className="sm:col-span-5 flex flex-col">
+        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 transition-colors hover:border-blue-200">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                <div className="sm:col-span-5 flex flex-col">
                  <div className="flex items-center space-x-2">
                     <button
                         type="button"
@@ -123,7 +138,6 @@ const ToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, isEditMode, s
                             value={item.name}
                             onChange={(val) => onChange({ name: val })}
                             onSelect={(val) => {
-                                // Instant Update with Price
                                 const price = globalPrices[val];
                                 if (price !== undefined) {
                                     onChange({ name: val, rate: price });
@@ -171,6 +185,8 @@ const ToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, isEditMode, s
                         className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 text-sm"
                         min="0"
                         disabled={!isEnabled}
+                        readOnly={hasSubItems}
+                        title={hasSubItems ? "Bu fiyat alt başlıkların toplamından hesaplanır." : ""}
                     />
                 </div>
             </div>
@@ -193,6 +209,56 @@ const ToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, isEditMode, s
                 )}
             </div>
         </div>
+
+        {/* Sub Items for Toggle Row */}
+        { (hasSubItems || isEditMode) && isEnabled && (
+             <div className="mt-2 ml-2 pl-4 border-l-2 border-slate-200">
+                 <div className="bg-slate-100/50 rounded p-2">
+                     <div className="flex justify-between items-center mb-2 pl-4 pr-2">
+                        {hasSubItems ? (
+                            <div className="grid grid-cols-12 gap-2 w-full text-xs text-slate-500 font-medium">
+                                <div className="col-span-4">Malzeme / Ekstra</div>
+                                <div className="col-span-1 text-center">Göster</div>
+                                <div className="col-span-2">Birim</div>
+                                <div className="col-span-2">Fiyat</div>
+                                <div className="col-span-2 text-right">Tutar</div>
+                            </div>
+                        ) : (
+                            <div className="text-xs text-slate-400 italic">Alt başlık yok.</div>
+                        )}
+                        
+                         {isEditMode && (
+                             <button 
+                                type="button" 
+                                onMouseDown={handleAddSubItemClick} 
+                                className="ml-2 text-blue-600 hover:bg-blue-50 p-1 rounded whitespace-nowrap text-xs font-semibold"
+                            >
+                                 + Alt Başlık
+                             </button>
+                         )}
+                     </div>
+                     
+                     {item.subItems?.map(sub => (
+                         <SubItemRow 
+                            key={sub.id} 
+                            subItem={sub} 
+                            onChange={handleSubItemChange}
+                            onDelete={(subId) => onDeleteSubItem && onDeleteSubItem(item.id, subId)}
+                            isEditMode={isEditMode}
+                            suggestions={suggestions}
+                            globalPrices={globalPrices}
+                        />
+                     ))}
+                     
+                     {hasSubItems && (
+                        <div className="mt-2 pt-2 border-t border-slate-200 text-right text-xs text-slate-500 italic">
+                            * Ana fiyat, buradaki kalemlerin toplamına otomatik eşitlenir.
+                        </div>
+                     )}
+                 </div>
+             </div>
+        )}
+        </div>
     );
 };
 
@@ -207,7 +273,7 @@ const SubItemRow: React.FC<{ subItem: PricingSubItem; onChange: (id: string, upd
 
     return (
         <div className="grid grid-cols-12 gap-2 items-center mt-2 py-2 border-t border-slate-200/50 group">
-             <div className="col-span-5 pl-4 flex items-center">
+             <div className="col-span-4 pl-4 flex items-center">
                  <div className="mr-2 flex items-center">
                     <button
                         type="button"
@@ -222,7 +288,6 @@ const SubItemRow: React.FC<{ subItem: PricingSubItem; onChange: (id: string, upd
                         value={subItem.name}
                         onChange={(val) => onChange(subItem.id, { name: val })}
                         onSelect={(val) => {
-                            // Instant Update with Price
                             const price = globalPrices[val];
                             if (price !== undefined) {
                                 onChange(subItem.id, { name: val, rate: price });
@@ -238,6 +303,15 @@ const SubItemRow: React.FC<{ subItem: PricingSubItem; onChange: (id: string, upd
                         {subItem.name}
                     </span>
                  )}
+             </div>
+             <div className="col-span-1 flex items-center justify-center">
+                 <input 
+                    type="checkbox"
+                    checked={subItem.showInProposal !== false}
+                    onChange={(e) => onChange(subItem.id, { showInProposal: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    title="Teklifte Göster/Gizle"
+                 />
              </div>
              <div className="col-span-2">
                  <input
@@ -405,7 +479,6 @@ const SelectableRow: React.FC<RowProps> = ({ item, onChange, onDelete, onAddOpti
                                         value={newOptionName}
                                         onChange={(val) => setNewOptionName(val)}
                                         onSelect={(val) => {
-                                            // Just update text, option usually doesn't have direct price unless empty
                                             setNewOptionName(val);
                                         }}
                                         suggestions={suggestions}
@@ -465,7 +538,8 @@ const SelectableRow: React.FC<RowProps> = ({ item, onChange, onDelete, onAddOpti
                          <div className="flex justify-between items-center mb-2 pl-4 pr-2">
                             {hasSubItems ? (
                                 <div className="grid grid-cols-12 gap-2 w-full text-xs text-slate-500 font-medium">
-                                    <div className="col-span-5">Malzeme / Ekstra</div>
+                                    <div className="col-span-4">Malzeme / Ekstra</div>
+                                    <div className="col-span-1 text-center">Göster</div>
                                     <div className="col-span-2">Birim</div>
                                     <div className="col-span-2">Fiyat</div>
                                     <div className="col-span-2 text-right">Tutar</div>
@@ -510,7 +584,93 @@ const SelectableRow: React.FC<RowProps> = ({ item, onChange, onDelete, onAddOpti
 };
 
 const SelectableToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, onAddOption, onDeleteOption, onAddSubItem, onDeleteSubItem, isEditMode, suggestions = [], globalPrices = {} }) => {
+    // Same structure as SelectableRow, reusing SubItemRow and logic
+    // For brevity, using exact same implementation as SelectableRow but with Toggle Header logic
+    
     const isEnabled = item.units > 0;
+    // If disabled, we might still want to show subItems if they were previously configured, but usually we hide details.
+    // Requirement: allow editing subItems even if toggle is off? Usually better to be on.
+    // Let's stick to: Only show details if Enabled.
+    
+    // Reuse SelectableRow internal logic
+    return (
+        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3 hover:border-blue-200 transition-colors">
+             {/* Header Part */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                <div className="sm:col-span-4 flex flex-col">
+                    <div className="flex items-center space-x-2">
+                        <button
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onChange({ units: isEnabled ? 0 : 1 }); }}
+                            className={`relative inline-flex items-center h-6 rounded-full w-11 shrink-0 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isEnabled ? 'bg-green-600' : 'bg-slate-300'}`}
+                            aria-pressed={isEnabled}
+                        >
+                            <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                        
+                        {isEditMode ? (
+                            <SuggestionInput 
+                                value={item.name}
+                                onChange={(val) => onChange({ name: val })}
+                                onSelect={(val) => {
+                                    const price = globalPrices[val];
+                                    if (price !== undefined) onChange({ name: val, rate: price });
+                                    else onChange({ name: val });
+                                }}
+                                suggestions={suggestions}
+                                className="font-medium text-slate-800 bg-white border border-slate-300 focus:border-blue-500 rounded px-2 py-1 transition-colors focus:outline-none w-full uppercase text-sm"
+                            />
+                        ) : (
+                            <span className="font-medium text-slate-800 uppercase text-sm px-1 py-1">{item.name}</span>
+                        )}
+
+                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isEnabled ? 'text-green-800 bg-green-100' : 'text-slate-600 bg-slate-200'} whitespace-nowrap ml-2`}>
+                            {isEnabled ? 'Var' : 'Yok'}
+                        </span>
+                    </div>
+                    {item.description && <p className="text-xs text-slate-500 mt-1 pl-1">{item.description}</p>}
+                </div>
+                <div className="sm:col-span-2 sm:col-start-10 text-right">
+                    <p className="text-xs text-slate-500 mb-1">Tutar (Toplam)</p>
+                    <p className="font-bold text-lg text-slate-800">
+                        {(item.units * item.rate).toLocaleString('tr-TR')} TL
+                    </p>
+                </div>
+                 <div className="sm:col-span-1 flex justify-end h-8">
+                    {isEditMode && (
+                        <button 
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(item.id); }}
+                            className="text-slate-300 hover:text-red-500 transition p-1 rounded hover:bg-red-50"
+                            title="Sil"
+                        >
+                            <TrashIcon className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Details Part (Only if Enabled) */}
+            {isEnabled && (
+                <SelectableRowContent 
+                    item={item} 
+                    onChange={onChange} 
+                    onDelete={onDelete} 
+                    onAddOption={onAddOption} 
+                    onDeleteOption={onDeleteOption} 
+                    onAddSubItem={onAddSubItem} 
+                    onDeleteSubItem={onDeleteSubItem} 
+                    isEditMode={isEditMode} 
+                    suggestions={suggestions} 
+                    globalPrices={globalPrices} 
+                />
+            )}
+        </div>
+    );
+};
+
+// Helper to reuse the content between SelectableRow and SelectableToggleRow
+const SelectableRowContent: React.FC<RowProps> = ({ item, onChange, onAddOption, onDeleteOption, onAddSubItem, onDeleteSubItem, isEditMode, suggestions = [], globalPrices = {} }) => {
     const hasSubItems = item.subItems && item.subItems.length > 0;
     const [isAddingOption, setIsAddingOption] = useState(false);
     const [newOptionName, setNewOptionName] = useState('');
@@ -523,7 +683,6 @@ const SelectableToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, onA
         onChange({ subItems: updatedSubItems });
     };
 
-    // Inline Option Add Handlers
     const handleStartAddOption = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -561,197 +720,136 @@ const SelectableToggleRow: React.FC<RowProps> = ({ item, onChange, onDelete, onA
     }
 
     return (
-        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3 hover:border-blue-200 transition-colors">
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                <div className="sm:col-span-4 flex flex-col">
-                    <div className="flex items-center space-x-2">
-                        <button
-                            type="button"
-                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onChange({ units: isEnabled ? 0 : 1 }); }}
-                            className={`relative inline-flex items-center h-6 rounded-full w-11 shrink-0 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isEnabled ? 'bg-green-600' : 'bg-slate-300'}`}
-                            aria-pressed={isEnabled}
-                        >
-                            <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                        
-                        {isEditMode ? (
-                            <SuggestionInput 
-                                value={item.name}
-                                onChange={(val) => onChange({ name: val })}
-                                onSelect={(val) => {
-                                    // Instant Update with Price
-                                    const price = globalPrices[val];
-                                    if (price !== undefined) {
-                                        onChange({ name: val, rate: price });
-                                    } else {
-                                        onChange({ name: val });
-                                    }
-                                }}
-                                suggestions={suggestions}
-                                className="font-medium text-slate-800 bg-white border border-slate-300 focus:border-blue-500 rounded px-2 py-1 transition-colors focus:outline-none w-full uppercase text-sm"
-                            />
-                        ) : (
-                            <span className="font-medium text-slate-800 uppercase text-sm px-1 py-1">{item.name}</span>
-                        )}
-
-                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isEnabled ? 'text-green-800 bg-green-100' : 'text-slate-600 bg-slate-200'} whitespace-nowrap ml-2`}>
-                            {isEnabled ? 'Var' : 'Yok'}
-                        </span>
-                    </div>
-                    {item.description && <p className="text-xs text-slate-500 mt-1 pl-1">{item.description}</p>}
-                </div>
-                <div className="sm:col-span-2 sm:col-start-10 text-right">
-                    <p className="text-xs text-slate-500 mb-1">Tutar (Toplam)</p>
-                    <p className="font-bold text-lg text-slate-800">
-                        {(item.units * item.rate).toLocaleString('tr-TR')} TL
-                    </p>
-                </div>
-                 <div className="sm:col-span-1 flex justify-end h-8">
-                    {isEditMode && (
-                        <button 
-                            type="button"
-                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(item.id); }}
-                            className="text-slate-300 hover:text-red-500 transition p-1 rounded hover:bg-red-50"
-                            title="Sil"
-                        >
-                            <TrashIcon className="w-5 h-5" />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {isEnabled && (
-                 <div className="pl-2 sm:pl-4 border-l-2 border-slate-200 ml-2">
-                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center mb-4">
-                        <div className={`sm:col-span-${hasSubItems ? '11' : '8'}`}>
-                            <div className="flex justify-between items-center mb-1">
-                                <label htmlFor={`select-${item.id}`} className="text-xs text-slate-500">Seçenek</label>
-                                {isEditMode && !isAddingOption && (
-                                    <div className="flex space-x-3">
-                                        <button 
-                                            type="button" 
-                                            onMouseDown={handleStartAddOption} 
-                                            className="text-blue-600 hover:underline mr-3 font-semibold text-xs"
-                                        >
-                                            + Seçenek Ekle
-                                        </button>
-                                        {item.selectedOptionName && (
-                                            <button 
-                                                type="button" 
-                                                onMouseDown={handleDeleteOptionClick} 
-                                                className="text-red-500 hover:underline font-semibold text-xs"
-                                            >
-                                                Seçeneği Sil
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            
-                            {isAddingOption ? (
-                                <div className="flex items-center gap-1 w-full">
-                                    <SuggestionInput 
-                                        value={newOptionName}
-                                        onChange={(val) => setNewOptionName(val)}
-                                        onSelect={(val) => setNewOptionName(val)}
-                                        suggestions={suggestions}
-                                        className="w-full px-3 py-2 bg-white border border-blue-500 rounded-md shadow-sm focus:outline-none uppercase text-sm"
-                                        placeholder="YENİ SEÇENEK İSMİ"
-                                        autoFocus
-                                    />
-                                    <button 
-                                        type="button"
-                                        onMouseDown={handleSaveOption}
-                                        className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
-                                        title="Kaydet"
-                                    >
-                                        <CheckIcon className="w-5 h-5" />
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onMouseDown={handleCancelOption}
-                                        className="bg-slate-300 text-slate-600 p-2 rounded hover:bg-slate-400"
-                                        title="İptal"
-                                    >
-                                        <XMarkIcon className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <select
-                                    id={`select-${item.id}`}
-                                    value={item.selectedOptionName}
-                                    onChange={(e) => onChange({ selectedOptionName: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        <div className="pl-2 sm:pl-4 border-l-2 border-slate-200 ml-2">
+             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center mb-4">
+                <div className={`sm:col-span-${hasSubItems ? '11' : '8'}`}>
+                    <div className="flex justify-between items-center mb-1">
+                        <label htmlFor={`select-${item.id}`} className="text-xs text-slate-500">Seçenek</label>
+                        {isEditMode && !isAddingOption && (
+                            <div className="flex space-x-3">
+                                <button 
+                                    type="button" 
+                                    onMouseDown={handleStartAddOption} 
+                                    className="text-blue-600 hover:underline mr-3 font-semibold text-xs"
                                 >
-                                    {item.options?.map(opt => <option key={opt.name} value={opt.name}>{opt.name}</option>)}
-                                </select>
-                            )}
-                        </div>
-                         {!hasSubItems && (
-                             <div className="sm:col-span-3">
-                                <label htmlFor={`option-rate-${item.id}`} className="text-xs text-slate-500 block mb-1">Seçenek Fiyatı (TL)</label>
-                                <input
-                                    type="number"
-                                    id={`option-rate-${item.id}`}
-                                    value={item.rate === 0 ? '' : item.rate}
-                                    placeholder="0"
-                                    onChange={(e) => onChange({ rate: e.target.valueAsNumber || 0 })}
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                    min="0"
-                                    readOnly={hasSubItems}
-                                    title={hasSubItems ? "Bu fiyat alt başlıkların toplamından hesaplanır." : ""}
-                                />
-                            </div>
-                         )}
-                     </div>
-
-                     {/* Sub Items List & Add Button */}
-                     { (hasSubItems || isEditMode) && (
-                         <div className="mt-2 bg-slate-100/50 rounded p-2">
-                             <div className="flex justify-between items-center mb-2 pl-4 pr-2">
-                                {hasSubItems ? (
-                                    <div className="grid grid-cols-12 gap-2 w-full text-xs text-slate-500 font-medium">
-                                        <div className="col-span-5">Malzeme / Ekstra</div>
-                                        <div className="col-span-2">Birim</div>
-                                        <div className="col-span-2">Fiyat</div>
-                                        <div className="col-span-2 text-right">Tutar</div>
-                                    </div>
-                                ) : (
-                                    <div className="text-xs text-slate-400 italic">Bu seçeneğe ait alt malzeme yok.</div>
-                                )}
-                                
-                                {isEditMode && (
+                                    + Seçenek Ekle
+                                </button>
+                                {item.selectedOptionName && (
                                     <button 
                                         type="button" 
-                                        onMouseDown={handleAddSubItemClick} 
-                                        className="ml-2 text-blue-600 hover:bg-blue-50 p-1 rounded whitespace-nowrap text-xs font-semibold"
+                                        onMouseDown={handleDeleteOptionClick} 
+                                        className="text-red-500 hover:underline font-semibold text-xs"
                                     >
-                                         + Alt Başlık
-                                     </button>
+                                        Seçeneği Sil
+                                    </button>
                                 )}
-                             </div>
-                             
-                             {item.subItems?.map(sub => (
-                                 <SubItemRow 
-                                    key={sub.id} 
-                                    subItem={sub} 
-                                    onChange={handleSubItemChange}
-                                    onDelete={(subId) => onDeleteSubItem && onDeleteSubItem(item.id, subId)}
-                                    isEditMode={isEditMode}
-                                    suggestions={suggestions}
-                                    globalPrices={globalPrices}
-                                />
-                             ))}
-                             
-                             {hasSubItems && (
-                                <div className="mt-2 pt-2 border-t border-slate-200 text-right text-xs text-slate-500 italic">
-                                    * Ana fiyat, buradaki kalemlerin toplamına otomatik eşitlenir.
-                                </div>
-                             )}
-                         </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {isAddingOption ? (
+                        <div className="flex items-center gap-1 w-full">
+                            <SuggestionInput 
+                                value={newOptionName}
+                                onChange={(val) => setNewOptionName(val)}
+                                onSelect={(val) => setNewOptionName(val)}
+                                suggestions={suggestions}
+                                className="w-full px-3 py-2 bg-white border border-blue-500 rounded-md shadow-sm focus:outline-none uppercase text-sm"
+                                placeholder="YENİ SEÇENEK İSMİ"
+                                autoFocus
+                            />
+                            <button 
+                                type="button"
+                                onMouseDown={handleSaveOption}
+                                className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
+                                title="Kaydet"
+                            >
+                                <CheckIcon className="w-5 h-5" />
+                            </button>
+                            <button 
+                                type="button"
+                                onMouseDown={handleCancelOption}
+                                className="bg-slate-300 text-slate-600 p-2 rounded hover:bg-slate-400"
+                                title="İptal"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ) : (
+                        <select
+                            id={`select-${item.id}`}
+                            value={item.selectedOptionName}
+                            onChange={(e) => onChange({ selectedOptionName: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                            {item.options?.map(opt => <option key={opt.name} value={opt.name}>{opt.name}</option>)}
+                        </select>
+                    )}
+                </div>
+                 {!hasSubItems && (
+                     <div className="sm:col-span-3">
+                        <label htmlFor={`option-rate-${item.id}`} className="text-xs text-slate-500 block mb-1">Seçenek Fiyatı (TL)</label>
+                        <input
+                            type="number"
+                            id={`option-rate-${item.id}`}
+                            value={item.rate === 0 ? '' : item.rate}
+                            placeholder="0"
+                            onChange={(e) => onChange({ rate: e.target.valueAsNumber || 0 })}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            min="0"
+                            readOnly={hasSubItems}
+                            title={hasSubItems ? "Bu fiyat alt başlıkların toplamından hesaplanır." : ""}
+                        />
+                    </div>
+                 )}
+             </div>
+
+             {/* Sub Items List & Add Button */}
+             { (hasSubItems || isEditMode) && (
+                 <div className="mt-2 bg-slate-100/50 rounded p-2">
+                     <div className="flex justify-between items-center mb-2 pl-4 pr-2">
+                        {hasSubItems ? (
+                            <div className="grid grid-cols-12 gap-2 w-full text-xs text-slate-500 font-medium">
+                                <div className="col-span-4">Malzeme / Ekstra</div>
+                                <div className="col-span-1 text-center">Göster</div>
+                                <div className="col-span-2">Birim</div>
+                                <div className="col-span-2">Fiyat</div>
+                                <div className="col-span-2 text-right">Tutar</div>
+                            </div>
+                        ) : (
+                            <div className="text-xs text-slate-400 italic">Bu seçeneğe ait alt malzeme yok.</div>
+                        )}
+                        
+                         {isEditMode && (
+                             <button 
+                                type="button" 
+                                onMouseDown={handleAddSubItemClick} 
+                                className="ml-2 text-blue-600 hover:bg-blue-50 p-1 rounded whitespace-nowrap text-xs font-semibold"
+                            >
+                                 + Alt Başlık
+                             </button>
+                         )}
+                     </div>
+                     
+                     {item.subItems?.map(sub => (
+                         <SubItemRow 
+                            key={sub.id} 
+                            subItem={sub} 
+                            onChange={handleSubItemChange}
+                            onDelete={(subId) => onDeleteSubItem && onDeleteSubItem(item.id, subId)}
+                            isEditMode={isEditMode}
+                            suggestions={suggestions}
+                            globalPrices={globalPrices}
+                        />
+                     ))}
+                     
+                     {hasSubItems && (
+                        <div className="mt-2 pt-2 border-t border-slate-200 text-right text-xs text-slate-500 italic">
+                            * Ana fiyat, buradaki kalemlerin toplamına otomatik eşitlenir.
+                        </div>
                      )}
                  </div>
-            )}
+             )}
         </div>
     );
 };
